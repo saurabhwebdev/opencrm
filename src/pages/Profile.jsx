@@ -106,13 +106,13 @@ export default function Profile() {
       ]);
 
       // Then delete the user account
-      const { error } = await supabase.auth.api.deleteUser(
-        user.id,
-        process.env.REACT_APP_SUPABASE_SERVICE_KEY
-      );
+      const { error } = await supabase.rpc('delete_user');
 
       if (error) throw error;
 
+      // Sign out the user after deletion
+      await supabase.auth.signOut();
+      
       toast.success('Account deleted successfully');
       navigate('/login');
     } catch (error) {
