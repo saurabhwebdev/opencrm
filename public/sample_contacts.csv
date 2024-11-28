@@ -1,0 +1,6 @@
+name,email,phone,company,title,address,notes
+John Smith,john.smith@email.com,1234567890,Acme Corp,Sales Manager,"123 Business Ave, Suite 100, New York, NY 10001","Key client contact, prefers morning meetings"
+Sarah Johnson,sarah.j@email.com,+44123456789,Tech Solutions Ltd,CTO,"456 Innovation St, London, UK","Technical decision maker, interested in AI solutions"
+Maria Garcia,maria.g@email.com,34612345678,Global Services,Director,"789 Gran Via, Madrid, Spain","Spanish speaker, quarterly review schedule"
+David Lee,david.lee@email.com,+85212345678,Asia Trading Co.,VP Sales,"1010 Harbor Road, Hong Kong","APAC region lead, GMT+8 timezone"
+Anna Schmidt,anna.s@email.com,49123456789,Deutsche Tech,Product Manager,"321 Berliner Str, Berlin, Germany","Manages product integration projects" 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, FunnelIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { parsePhoneNumber } from 'libphonenumber-js';
 import { contactsService } from '../services/databaseService';
@@ -8,6 +8,7 @@ import { countries } from '../data/countries';
 import { useAuth } from '../contexts/AuthContext';
 import EmptyState from '../components/EmptyState';
 import { interactionsService } from '../services/databaseService';
+import Papa from 'papaparse';
 
 const getCountryFromPhone = (phoneNumber) => {
   try {
@@ -42,6 +43,10 @@ export default function Contacts() {
     sortOrder: 'asc'
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [isImporting, setIsImporting] = useState(false);
 
   const { user } = useAuth();
 
@@ -136,17 +141,120 @@ export default function Contacts() {
     return Flag ? <Flag className="h-4 w-6 inline-block mr-2" /> : null;
   };
 
+  const handleImportContacts = async (parsedData) => {
+    setIsImporting(true);
+    const total = parsedData.length;
+    let imported = 0;
+
+    try {
+      for (const row of parsedData) {
+        // Format phone number - ensure it starts with '+'
+        let formattedPhone = row.phone.trim();
+        if (!formattedPhone.startsWith('+')) {
+          formattedPhone = '+' + formattedPhone.replace(/[^0-9]/g, '');
+        }
+
+        const contactData = {
+          name: row.name,
+          email: row.email,
+          phone: formattedPhone,
+          company: row.company || '',
+          title: row.title || '',
+          address: row.address || '',
+          notes: row.notes || ''
+        };
+
+        await contactsService.add(contactData);
+        imported++;
+        setImportProgress(Math.round((imported / total) * 100));
+      }
+
+      toast.success(`Successfully imported ${imported} contacts`);
+      fetchContacts();
+    } catch (error) {
+      console.error('Import error:', error);
+      toast.error('Error importing contacts');
+    } finally {
+      setIsImporting(false);
+      setImportProgress(0);
+      setImportFile(null);
+      setIsImportModalOpen(false);
+    }
+  };
+
+  const handleFileUpload = (file) => {
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.errors.length > 0) {
+          console.error('CSV parsing errors:', results.errors);
+          toast.error('Error parsing CSV file. Please check the file format.');
+          return;
+        }
+
+        // Validate required fields
+        const requiredFields = ['name', 'email', 'phone'];
+        const headers = Object.keys(results.data[0] || {});
+        const missingFields = requiredFields.filter(field => !headers.includes(field));
+
+        if (missingFields.length > 0) {
+          toast.error(`Missing required fields: ${missingFields.join(', ')}`);
+          return;
+        }
+
+        // Filter out empty rows and validate data
+        const validData = results.data.filter(row => {
+          return row.name && row.email && row.phone;
+        });
+
+        if (validData.length === 0) {
+          toast.error('No valid contacts found in the CSV file');
+          return;
+        }
+
+        handleImportContacts(validData);
+      },
+      error: (error) => {
+        console.error('File reading error:', error);
+        toast.error('Error reading file. Please make sure it\'s a valid CSV file.');
+      }
+    });
+  };
+
+  const downloadTemplate = () => {
+    const template = 'name,email,phone,company,title,address,notes\n';
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'contacts_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="container mx-auto px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Contacts</h1>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="btn btn-primary flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add Contact
-        </button>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="btn btn-primary flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add Contact
+          </button>
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="btn btn-secondary flex items-center"
+          >
+            <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+            Import Contacts
+          </button>
+        </div>
       </div>
 
       {/* Search and Filter Bar */}
@@ -378,6 +486,20 @@ export default function Contacts() {
             setSelectedContact(null);
           }}
           onEdit={handleEditFromDetail}
+        />
+      )}
+
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <ImportModal
+          onClose={() => {
+            setIsImportModalOpen(false);
+            setImportFile(null);
+          }}
+          onImport={handleFileUpload}
+          onDownloadTemplate={downloadTemplate}
+          onImportProgress={importProgress}
+          isImporting={isImporting}
         />
       )}
     </div>
@@ -830,3 +952,143 @@ function ContactDetailModal({ contact, onClose, onEdit }) {
     </div>
   );
 }
+
+function ImportModal({ onClose, onImport, onDownloadTemplate, onImportProgress, isImporting }) {
+  const [file, setFile] = useState(null);
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile && !selectedFile.name.toLowerCase().endsWith('.csv')) {
+      toast.error('Please select a CSV file');
+      return;
+    }
+    setFile(selectedFile);
+  };
+
+  const handleImport = () => {
+    if (!file) {
+      toast.error('Please select a file first');
+      return;
+    }
+    onImport(file);
+  };
+
+  const downloadTemplate = () => {
+    const template = 'name,email,phone,company,title,address,notes\n';
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'contacts_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+      <div className="relative top-10 mx-auto p-0 border w-[600px] shadow-2xl rounded-lg bg-white">
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-semibold text-gray-900">
+              Import Contacts
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full p-1"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-blue-800 mb-2">Instructions:</h4>
+              <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
+                <li>File must be in CSV format</li>
+                <li>Required fields: name, email, phone</li>
+                <li>Phone numbers can be with or without '+' prefix</li>
+                <li>Examples of valid phone numbers:</li>
+                <ul className="ml-6 list-disc list-inside text-xs">
+                  <li>1234567890</li>
+                  <li>+1234567890</li>
+                  <li>44123456789</li>
+                  <li>+44123456789</li>
+                </ul>
+                <li>Remove any spaces or special characters from phone numbers</li>
+                <li>Maximum file size: 5MB</li>
+              </ul>
+              <div className="mt-3 flex space-x-4">
+                <button
+                  onClick={onDownloadTemplate}
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Download Template
+                </button>
+                <a
+                  href="/sample_contacts.csv"
+                  download
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Download Sample
+                </a>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Choose CSV File
+              </label>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                className="block w-full text-sm text-gray-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-blue-700
+                  hover:file:bg-blue-100"
+              />
+            </div>
+
+            {isImporting && (
+              <div className="space-y-2">
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div
+                    className="h-2 bg-blue-600 rounded-full transition-all duration-300"
+                    style={{ width: `${onImportProgress}%` }}
+                  ></div>
+                </div>
+                <p className="text-sm text-gray-600 text-center">
+                  Importing... {onImportProgress}%
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-end space-x-3">
+            <button
+              onClick={onClose}
+              className="btn btn-secondary"
+              disabled={isImporting}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleImport}
+              className="btn btn-primary"
+              disabled={!file || isImporting}
+            >
+              {isImporting ? 'Importing...' : 'Import Contacts'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
