@@ -78,6 +78,17 @@ export const contactsService = {
       .eq('user_id', user.id);
     
     if (error) throw error;
+  },
+
+  deleteAll: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { error } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('user_id', user.id);
+    
+    if (error) throw error;
   }
 };
 
@@ -156,6 +167,110 @@ export const tasksService = {
       .from('tasks')
       .delete()
       .eq('id', id)
+      .eq('user_id', user.id);
+    
+    if (error) throw error;
+  },
+
+  deleteAll: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('user_id', user.id);
+    
+    if (error) throw error;
+  }
+};
+
+export const interactionsService = {
+  getAll: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { data, error } = await supabase
+      .from('interactions')
+      .select('*, contacts!inner(*)')
+      .eq('user_id', user.id)
+      .order('interaction_date', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  add: async (interaction) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const interactionData = {
+      contact_id: interaction.contact_id,
+      type: interaction.type, // 'meeting', 'call', 'email'
+      interaction_date: interaction.interaction_date,
+      duration: interaction.duration,
+      summary: interaction.summary,
+      notes: interaction.notes,
+      follow_up_date: interaction.follow_up_date,
+      follow_up_notes: interaction.follow_up_notes,
+      status: interaction.status, // 'completed', 'needs_follow_up'
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('interactions')
+      .insert([interactionData])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  update: async (id, interaction) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const interactionData = {
+      type: interaction.type,
+      interaction_date: interaction.interaction_date,
+      duration: interaction.duration,
+      summary: interaction.summary,
+      notes: interaction.notes,
+      follow_up_date: interaction.follow_up_date,
+      follow_up_notes: interaction.follow_up_notes,
+      status: interaction.status,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('interactions')
+      .update(interactionData)
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  delete: async (id) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { error } = await supabase
+      .from('interactions')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+    
+    if (error) throw error;
+  },
+
+  deleteAll: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const { error } = await supabase
+      .from('interactions')
+      .delete()
       .eq('user_id', user.id);
     
     if (error) throw error;

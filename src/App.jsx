@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Contacts from './pages/Contacts';
 import Tasks from './pages/Tasks';
+import Interactions from './pages/Interactions';
 import Reports from './pages/Reports';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
@@ -44,6 +45,7 @@ function App() {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/contacts" element={<Contacts />} />
                     <Route path="/tasks" element={<Tasks />} />
+                    <Route path="/interactions" element={<Interactions />} />
                     <Route path="/reports" element={<Reports />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/help" element={<Help />} />

@@ -7,6 +7,7 @@ import * as countryFlags from 'country-flag-icons/react/3x2';
 import { countries } from '../data/countries';
 import { useAuth } from '../contexts/AuthContext';
 import EmptyState from '../components/EmptyState';
+import { interactionsService } from '../services/databaseService';
 
 const getCountryFromPhone = (phoneNumber) => {
   try {
@@ -250,19 +251,20 @@ export default function Contacts() {
         </div>
       </div>
 
+      {/* Contacts List */}
       {isLoading ? (
-        <div className="text-center py-4">
-          <div className="animate-pulse">Loading...</div>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : filteredContacts.length === 0 ? (
         <EmptyState
           type="contacts"
-          title={searchTerm || filters.country !== 'all'
+          title={searchTerm || filters.country !== 'all' 
             ? "No contacts found"
-            : "Your contacts list is empty"}
+            : "No contacts yet"}
           description={searchTerm || filters.country !== 'all'
             ? "Try adjusting your search or filter criteria"
-            : "Add your first contact to start building your network"}
+            : "Get started by adding your first contact"}
           actionText="Add Contact"
           onAction={() => setIsAddModalOpen(true)}
         />
@@ -649,6 +651,26 @@ function ContactModal({ contact, onClose, onSave }) {
 }
 
 function ContactDetailModal({ contact, onClose, onEdit }) {
+  const [interactions, setInteractions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchContactInteractions();
+  }, []);
+
+  const fetchContactInteractions = async () => {
+    setIsLoading(true);
+    try {
+      const data = await interactionsService.getAll();
+      const contactInteractions = data.filter(i => i.contact_id === contact.id);
+      setInteractions(contactInteractions);
+    } catch (error) {
+      console.error('Error fetching interactions:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getFlagEmoji = (countryCode) => {
     const Flag = countryFlags[countryCode];
     return Flag ? <Flag className="h-4 w-6 inline-block" /> : null;
@@ -773,6 +795,36 @@ function ContactDetailModal({ contact, onClose, onEdit }) {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Interactions History */}
+        <div className="mt-6">
+          <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
+            Interaction History
+          </h4>
+          {isLoading ? (
+            <div>Loading...</div>
+          ) : interactions.length === 0 ? (
+            <p className="text-gray-500">No interactions recorded yet</p>
+          ) : (
+            <div className="space-y-4">
+              {interactions.map(interaction => (
+                <div key={interaction.id} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">
+                        {interaction.type.charAt(0).toUpperCase() + interaction.type.slice(1)}
+                      </span>
+                      <p className="text-sm text-gray-600 mt-1">{interaction.summary}</p>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {new Date(interaction.interaction_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -259,8 +259,8 @@ export default function Tasks() {
 
       {/* Tasks List */}
       {isLoading ? (
-        <div className="text-center py-4">
-          <div className="animate-pulse">Loading...</div>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : filteredTasks.length === 0 ? (
         <EmptyState
