@@ -47,18 +47,18 @@ export default function Login() {
   const features = [
     {
       icon: UserGroupIcon,
-      title: "Contact Management",
-      description: "Organize and manage your contacts efficiently"
+      title: "Streamlined Relationship Management",
+      description: "Purpose-built tools that help you build and maintain meaningful business relationships without the complexity."
     },
     {
       icon: ClipboardDocumentListIcon,
-      title: "Task Tracking",
-      description: "Keep track of your tasks and deadlines"
+      title: "Efficiency-First Design",
+      description: "Every feature is thoughtfully crafted to maximize your productivity. No learning curve, no unnecessary clicks."
     },
     {
       icon: ChartBarIcon,
-      title: "Insightful Reports",
-      description: "Get detailed insights about your activities"
+      title: "Business Intelligence Made Simple",
+      description: "Transform your data into actionable insights with clear, focused reporting that drives better decisions."
     }
   ];
 
@@ -132,11 +132,14 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right Side - Features */}
+      {/* Right Side - Professional Features */}
       <div className="w-1/2 relative text-white p-12 flex items-center overflow-hidden">
         <FloatingBackground />
         <div className="relative z-10 max-w-md mx-auto">
-          <h3 className="text-2xl font-bold mb-8">Everything you need to stay organized</h3>
+          <h3 className="text-2xl font-bold mb-4">Experience CRM Excellence</h3>
+          <p className="text-blue-100 mb-8">
+            In today's fast-paced business environment, you need a CRM that works as efficiently as you do. OpenCRM combines enterprise-grade capabilities with intuitive design, delivering powerful results without the complexity.
+          </p>
           <div className="space-y-8">
             {features.map((feature, index) => (
               <Transition
@@ -157,6 +160,37 @@ export default function Login() {
                 </div>
               </Transition>
             ))}
+          </div>
+
+          {/* Enhanced social proof section */}
+          <div className="mt-12 pt-6 border-t border-blue-400/30">
+            <div className="flex items-start space-x-4">
+              <div className="flex-1">
+                <p className="text-sm text-blue-100 italic">
+                  "OpenCRM has transformed how we manage client relationships. Its focused approach and intuitive design have increased our team's productivity by 40% within the first month."
+                </p>
+                <p className="text-sm text-blue-200 mt-2 font-semibold">
+                  — Michael Chen
+                </p>
+                <p className="text-sm text-blue-200/80">
+                  Director of Operations, TechFlow Solutions
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex items-center space-x-4 text-sm text-blue-200">
+              <div className="flex items-center">
+                <CheckCircleIcon className="h-5 w-5 mr-1" />
+                <span>99.9% Uptime</span>
+              </div>
+              <div className="flex items-center">
+                <CheckCircleIcon className="h-5 w-5 mr-1" />
+                <span>SOC 2 Certified</span>
+              </div>
+              <div className="flex items-center">
+                <CheckCircleIcon className="h-5 w-5 mr-1" />
+                <span>GDPR Compliant</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

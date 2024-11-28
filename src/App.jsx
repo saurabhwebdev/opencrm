@@ -10,6 +10,7 @@ import Reports from './pages/Reports';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import Profile from './pages/Profile';
+import Help from './pages/Help';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ function App() {
                     <Route path="/tasks" element={<Tasks />} />
                     <Route path="/reports" element={<Reports />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="/help" element={<Help />} />
                   </Routes>
                 </Layout>
               </PrivateRoute>
