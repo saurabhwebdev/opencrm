@@ -39,6 +39,7 @@ export default function Contacts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     country: 'all',
+    company: 'all',
     sortBy: 'name',
     sortOrder: 'asc'
   });
@@ -81,7 +82,10 @@ export default function Contacts() {
       const matchesCountry = filters.country === 'all' || 
         (getCountryFromPhone(contact.phone)?.code === filters.country);
 
-      return matchesSearch && matchesCountry;
+      const matchesCompany = filters.company === 'all' || 
+        contact.company === filters.company;
+
+      return matchesSearch && matchesCountry && matchesCompany;
     })
     .sort((a, b) => {
       const order = filters.sortOrder === 'asc' ? 1 : -1;
@@ -90,6 +94,10 @@ export default function Contacts() {
           return order * a.name.localeCompare(b.name);
         case 'email':
           return order * a.email.localeCompare(b.email);
+        case 'company':
+          const companyA = a.company || '';
+          const companyB = b.company || '';
+          return order * companyA.localeCompare(companyB);
         case 'country':
           const countryA = getCountryFromPhone(a.phone)?.name || '';
           const countryB = getCountryFromPhone(b.phone)?.name || '';
@@ -105,6 +113,13 @@ export default function Contacts() {
     .filter(Boolean)
     .map(country => ({ code: country.code, name: country.name }))
   )].sort((a, b) => a.name.localeCompare(b.name));
+
+  // Get unique companies from contacts
+  const uniqueCompanies = [...new Set(contacts
+    .map(contact => contact.company)
+    .filter(Boolean)
+    .sort()
+  )];
 
   const handleSave = () => {
     setIsAddModalOpen(false);
@@ -307,6 +322,25 @@ export default function Contacts() {
                     </select>
                   </div>
 
+                  {/* Company Filter */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Company
+                    </label>
+                    <select
+                      className="input w-full"
+                      value={filters.company}
+                      onChange={(e) => setFilters({ ...filters, company: e.target.value })}
+                    >
+                      <option value="all">All Companies</option>
+                      {uniqueCompanies.map((company) => (
+                        <option key={company} value={company}>
+                          {company}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Sort By */}
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -319,6 +353,7 @@ export default function Contacts() {
                     >
                       <option value="name">Name</option>
                       <option value="email">Email</option>
+                      <option value="company">Company</option>
                       <option value="country">Country</option>
                     </select>
                   </div>
@@ -343,6 +378,7 @@ export default function Contacts() {
                     onClick={() => {
                       setFilters({
                         country: 'all',
+                        company: 'all',
                         sortBy: 'name',
                         sortOrder: 'asc'
                       });
@@ -384,17 +420,17 @@ export default function Contacts() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                   #
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Company
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Phone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-                  Country
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                   Actions
@@ -402,64 +438,64 @@ export default function Contacts() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredContacts.map((contact, index) => {
-                const country = getCountryFromPhone(contact.phone);
-                return (
-                  <tr 
-                    key={contact.id} 
-                    className="hover:bg-gray-50 cursor-pointer"
-                    onClick={() => handleContactClick(contact)}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {index + 1}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {contact.name}
+              {filteredContacts.map((contact, index) => (
+                <tr
+                  key={contact.id}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleContactClick(contact)}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {index + 1}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {contact.name}
+                    </div>
+                    {contact.title && (
+                      <div className="text-sm text-gray-500">
+                        {contact.title}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{contact.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{contact.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500 flex items-center">
-                        {country && (
-                          <>
-                            {getFlagComponent(country.code)}
-                            {country.name}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedContact(contact);
-                            setIsAddModalOpen(true);
-                          }}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(contact.id);
-                          }}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {contact.company || '-'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{contact.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center text-sm text-gray-900">
+                      {getCountryFromPhone(contact.phone)?.flag}
+                      {contact.phone}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedContact(contact);
+                          setIsAddModalOpen(true);
+                        }}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(contact.id);
+                        }}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

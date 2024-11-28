@@ -68,7 +68,9 @@ export default function TaskDetailModal({ task, onClose, onEdit }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-2 text-gray-600">
               <CalendarIcon className="h-5 w-5" />
-              <span className="text-sm">Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+              <span className="text-sm">
+                Due: {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}
+              </span>
             </div>
             {task.contactName && (
               <div className="flex items-center gap-2 text-gray-600">
